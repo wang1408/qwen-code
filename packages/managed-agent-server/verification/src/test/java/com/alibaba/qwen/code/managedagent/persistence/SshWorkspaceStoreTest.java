@@ -2,6 +2,7 @@ package com.alibaba.qwen.code.managedagent.persistence;
 
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
 import com.alibaba.qwen.code.managedagent.config.SshRuntimeSettings;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceToolProfiles;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
@@ -109,16 +110,16 @@ class SshWorkspaceStoreTest {
         var transaction = new org.springframework.transaction.support.TransactionTemplate(new DataSourceTransactionManager(jdbc.getDataSource()));
         var input = List.<Map<String, Object>>of(Map.of("type", "text", "text", "Read the project"));
         var selection = new WorkspaceSelection(intent.workspaceId(), ".");
-        var admitted = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "create", "digest",
-                "qwen-code", null, null, input, "payload", selection));
+        var admitted = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "create", "digest",
+                "qwen-code", null, null, input, "payload", selection)));
         assertThat(admitted.turnId()).isNotNull();
         assertThat(sessions.requireSession("tenant", admitted.sessionId()).toolProfile())
                 .isEqualTo(shell ? WorkspaceToolProfiles.SHELL : WorkspaceToolProfiles.FILES);
         ssh.setEnabled(false);
-        assertThat(transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "create", "digest",
-                "qwen-code", null, null, input, "payload", selection)).sessionId()).isEqualTo(admitted.sessionId());
-        assertThatThrownBy(() -> transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "another", "digest",
-                "qwen-code", null, null, input, "payload", selection))).isInstanceOf(ManagedAgentException.class);
+        assertThat(transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "create", "digest",
+                "qwen-code", null, null, input, "payload", selection))).sessionId()).isEqualTo(admitted.sessionId());
+        assertThatThrownBy(() -> transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "another", "digest",
+                "qwen-code", null, null, input, "payload", selection)))).isInstanceOf(ManagedAgentException.class);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ma_session", Integer.class)).isEqualTo(1);
         jdbc.update("UPDATE ma_turn SET status = 'COMPLETED' WHERE tenant_id = ? AND session_id = ?", "tenant", admitted.sessionId());
         assertThat(transaction.execute(ignored -> sessions.insertTurnCommand("tenant", "CREATE_TURN", "next-turn", "next-digest",
@@ -146,18 +147,18 @@ class SshWorkspaceStoreTest {
                         + "\"mcp_servers\":[{\"server_id\":\"docs\",\"server_revision\":1,\"definition_digest\":\""
                         + "a".repeat(64) + "\"}]}", 1));
         var input = prompted ? List.<Map<String, Object>>of(Map.of("type", "text", "text", "Read")) : List.<Map<String, Object>>of();
-        assertThatThrownBy(() -> transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "unsupported", "digest",
-                agent, null, null, input, "payload", new WorkspaceSelection(intent.workspaceId(), ".")))).isInstanceOf(ManagedAgentException.class);
+        assertThatThrownBy(() -> transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "unsupported", "digest",
+                agent, null, null, input, "payload", new WorkspaceSelection(intent.workspaceId(), "."))))).isInstanceOf(ManagedAgentException.class);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ma_session", Integer.class)).isZero();
         jdbc.update("INSERT INTO ma_workspace (tenant_id, workspace_id, workspace_generation, storage_id, display_name, config_ref, policy_ref, state)"
                 + " VALUES ('tenant', 'local', 1, 'local', 'Local', ?, ?, 'ACTIVE')", WorkspaceExecutionProfile.CONFIG_REF, WorkspaceExecutionProfile.POLICY_REF);
         jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role) VALUES ('tenant', 'local', ?, 'OWNER')",
                 com.alibaba.qwen.code.managedagent.repository.ManagedWorkspaceRegistry.actorKey("tenant", "actor"));
-        var local = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "local", "digest",
-                agent, null, null, input, "payload", new WorkspaceSelection("local", ".")));
+        var local = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "local", "digest",
+                agent, null, null, input, "payload", new WorkspaceSelection("local", "."))));
         assertThat(sessions.requireSession("tenant", local.sessionId()).toolProfile()).isEqualTo(WorkspaceToolProfiles.MCP);
-        var remote = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand("tenant", "actor", "remote", "digest",
-                "qwen-code", null, null, List.of(), null, new WorkspaceSelection(intent.workspaceId(), ".")));
+        var remote = transaction.execute(ignored -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "remote", "digest",
+                "qwen-code", null, null, List.of(), null, new WorkspaceSelection(intent.workspaceId(), "."))));
         jdbc.update("UPDATE ma_session SET tool_profile = ? WHERE tenant_id = ? AND session_id = ?", WorkspaceToolProfiles.MCP, "tenant", remote.sessionId());
         assertThatThrownBy(() -> transaction.execute(ignored -> sessions.insertTurnCommand("tenant", "CREATE_TURN", "unsupported-turn", "digest",
                 remote.sessionId(), List.of(Map.of("type", "text", "text", "Read")), "payload", "actor"))).isInstanceOf(ManagedAgentException.class);

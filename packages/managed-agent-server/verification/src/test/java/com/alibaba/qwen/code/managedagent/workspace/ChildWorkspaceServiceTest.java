@@ -2,6 +2,7 @@ package com.alibaba.qwen.code.managedagent.workspace;
 
 import com.alibaba.qwen.code.managedagent.adapters.workspace.ChildWorktreeGit;
 import com.alibaba.qwen.code.managedagent.adapters.workspace.ChildWorktreeGitTest;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.ChildWorkspaceException;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.ChildWorkspaceProvider;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.RuntimeWarmer;
@@ -1310,8 +1311,8 @@ class ChildWorkspaceServiceTest {
                 WorkspaceExecutionProfile.POLICY_REF);
         jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role)"
                 + " VALUES (?, 'workspace', ?, 'OPERATOR')", tenant, "actor".getBytes(StandardCharsets.UTF_8));
-        var created = sessions.insertWorkspaceSessionCommand(tenant, "actor", "create", "sha256:" + "a".repeat(64),
-                "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace", cwd));
+        var created = sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor", "create", "sha256:" + "a".repeat(64),
+                "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace", cwd)));
         return sessions.findSessionById(created.sessionId()).orElseThrow();
     }
 

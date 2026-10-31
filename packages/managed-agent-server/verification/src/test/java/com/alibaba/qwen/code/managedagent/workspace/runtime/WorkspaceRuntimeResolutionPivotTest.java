@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent.workspace.runtime;
 
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.model.StoreModels.OperationRecord;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
@@ -83,10 +84,10 @@ class WorkspaceRuntimeResolutionPivotTest {
                             + " VALUES (?, ?, ?, 'OPERATOR')", TENANT, WS,
                             ACTOR.getBytes(java.nio.charset
                                     .StandardCharsets.UTF_8));
-                    return store.insertWorkspaceSessionCommand(TENANT, ACTOR,
+                    return store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(TENANT, ACTOR,
                             "create", "digest", "qwen-code", null, null,
                             List.of(), null,
-                            new WorkspaceSelection(WS, "services/api"))
+                            new WorkspaceSelection(WS, "services/api")))
                             .sessionId();
                 });
 

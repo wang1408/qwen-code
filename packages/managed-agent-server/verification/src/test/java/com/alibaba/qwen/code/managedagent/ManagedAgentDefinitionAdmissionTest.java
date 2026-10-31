@@ -3,6 +3,7 @@ package com.alibaba.qwen.code.managedagent;
 import com.alibaba.qwen.code.managedagent.api.AuthenticatedTenantActor;
 import com.alibaba.qwen.code.managedagent.api.TenantContextFilter;
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
 import com.alibaba.qwen.code.managedagent.harness.UnavailableHarnessConnector;
@@ -93,8 +94,8 @@ class ManagedAgentDefinitionAdmissionTest {
         properties.getHarness().setWorkspaceShellEnabled(true);
         var selected = com.alibaba.qwen.code.managedagent.VerificationFixtures.configure(new ManagedAgentStore(jdbc, mapper, Clock.systemUTC(), ignored -> {}, registry, properties, new com.alibaba.qwen.code.managedagent.harness.SdkHarnessRules()));
         var transactions = new TransactionTemplate(transactionManager);
-        String id = transactions.execute(status -> selected.insertWorkspaceSessionCommand(tenant, "actor", "create", "digest",
-                "qwen-code", null, null, List.of(), null, new WorkspaceSelection("ws-a", ".")).sessionId());
+        String id = transactions.execute(status -> selected.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor", "create", "digest",
+                "qwen-code", null, null, List.of(), null, new WorkspaceSelection("ws-a", "."))).sessionId());
         var before = selected.requireSession(tenant, id);
         var admitted = transactions.execute(status -> selected.requireMcpManagement(tenant, "second", id, "operation"));
         assertThat(admitted).isEqualTo(before);
@@ -145,13 +146,14 @@ class ManagedAgentDefinitionAdmissionTest {
         assertThat(selected.workspaceSessionOptions(tenant, agent).planModeSupported()).isFalse();
         var transactions = new TransactionTemplate(transactionManager);
         var workspace = new WorkspaceSelection("ws-a", ".");
-        assertThatThrownBy(() -> transactions.execute(status -> selected.insertWorkspaceSessionCommand(
+        assertThatThrownBy(() -> transactions.execute(status -> selected.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                 tenant, "actor", "plan", "plan-digest", agent, null, null, List.of(), null, workspace,
-                null, true, true, true, List.of())))
+                null, true, true, true, List.of(),
+                false, null, null, java.util.Set.of(), null))))
                 .isInstanceOfSatisfying(ManagedAgentException.class,
                         error -> assertThat(error.getCode()).isEqualTo("unsupported_feature"));
-        String id = transactions.execute(status -> selected.insertWorkspaceSessionCommand(
-                tenant, "actor", "ordinary", "ordinary-digest", agent, null, null, List.of(), null, workspace).sessionId());
+        String id = transactions.execute(status -> selected.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
+                tenant, "actor", "ordinary", "ordinary-digest", agent, null, null, List.of(), null, workspace)).sessionId());
         var session = selected.requireSession(tenant, id);
         assertThat(session.toolProfile()).isEqualTo("hosted-workspace-shell/1");
         assertThat(session.agentDefinitionDigest()).isEqualTo(definition.get("digest").asText());
@@ -181,13 +183,13 @@ class ManagedAgentDefinitionAdmissionTest {
         var transaction = new TransactionTemplate(transactionManager);
         var workspace = new WorkspaceSelection("ws-a", ".");
         String builtin = transaction.execute(status ->
-                selected.insertWorkspaceSessionCommand(tenant, "actor",
+                selected.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor",
                         "builtin", "builtin-digest", "qwen-code", null,
-                        null, List.of(), null, workspace).sessionId());
+                        null, List.of(), null, workspace)).sessionId());
         String custom = transaction.execute(status ->
-                selected.insertWorkspaceSessionCommand(tenant, "actor",
+                selected.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor",
                         "custom", "custom-digest", definition.get("id").asText(),
-                        null, null, List.of(), null, workspace).sessionId());
+                        null, null, List.of(), null, workspace)).sessionId());
         assertThat(selected.requireSession(tenant, builtin).toolProfile())
                 .isEqualTo(shellEnabled ? "hosted-workspace-shell/1"
                         : "hosted-workspace-files/1");
@@ -226,9 +228,9 @@ class ManagedAgentDefinitionAdmissionTest {
         var workspace = new WorkspaceSelection("ws-a", ".");
         var input = List.<Map<String, Object>>of(
                 Map.of("type", "input_text", "text", "go"));
-        var initial = transaction.execute(status -> enabled.insertWorkspaceSessionCommand(
+        var initial = transaction.execute(status -> enabled.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                 tenant, "actor", "initial", "initial-digest", agentId, null,
-                null, input, "payload-digest", workspace));
+                null, input, "payload-digest", workspace)));
         assertThat(initial.turnId()).isNotNull();
         assertThat(enabled.requireSession(tenant, initial.sessionId()).approvalMode())
                 .isEqualTo(mode);
@@ -236,19 +238,19 @@ class ManagedAgentDefinitionAdmissionTest {
         var disabled = com.alibaba.qwen.code.managedagent.VerificationFixtures.configure(new ManagedAgentStore(jdbc, mapper, Clock.systemUTC(),
                 ignored -> {}, registry, properties, new com.alibaba.qwen.code.managedagent.harness.SdkHarnessRules()));
         disabled.setManagedAgentDefinitionStore(definitions);
-        var empty = transaction.execute(status -> disabled.insertWorkspaceSessionCommand(
+        var empty = transaction.execute(status -> disabled.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                 tenant, "actor", "empty", "empty-digest", agentId, null,
-                null, List.of(), null, workspace));
+                null, List.of(), null, workspace)));
         assertThat(empty.turnId()).isNull();
         assertThat(disabled.requireSession(tenant, empty.sessionId()).toolProfile())
                 .isEqualTo("hosted-workspace-shell/1");
-        assertThat(transaction.execute(status -> disabled.insertWorkspaceSessionCommand(
+        assertThat(transaction.execute(status -> disabled.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                 tenant, "actor", "initial", "initial-digest", agentId, null,
-                null, input, "payload-digest", workspace)).sessionId())
+                null, input, "payload-digest", workspace))).sessionId())
                 .isEqualTo(initial.sessionId());
-        assertThatThrownBy(() -> transaction.execute(status -> disabled.insertWorkspaceSessionCommand(
+        assertThatThrownBy(() -> transaction.execute(status -> disabled.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                 tenant, "actor", "fresh", "fresh-digest", agentId, null,
-                null, input, "payload-digest", workspace)))
+                null, input, "payload-digest", workspace))))
                 .isInstanceOfSatisfying(ManagedAgentException.class,
                         error -> assertThat(error.getCode()).isEqualTo("workspace_unavailable"));
         assertThatThrownBy(() -> transaction.execute(status -> disabled.insertTurnCommand(
@@ -485,9 +487,9 @@ class ManagedAgentDefinitionAdmissionTest {
             throw new AssertionError(error);
         }
         String digest = "sha256:" + "a".repeat(64);
-        String sessionId = store.insertWorkspaceSessionCommand(tenant,
+        String sessionId = store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant,
                 "actor", "create", digest, agentId, null, null, List.of(),
-                null, new WorkspaceSelection("ws-a", ".")).sessionId();
+                null, new WorkspaceSelection("ws-a", "."))).sessionId();
         UnavailableHarnessConnector harness = new UnavailableHarnessConnector() {
             @Override
             public boolean isWorkspaceFilesAvailable() {

@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent;
 
 import com.alibaba.qwen.code.managedagent.contracts.session.AgentStateStore;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
 import com.alibaba.qwen.code.managedagent.model.StoreModels;
@@ -62,10 +63,10 @@ class ChildResultRelayStoreTest {
                         + " VALUES ('" + TENANT + "', 'workspace', ?,"
                         + " 'OPERATOR')",
                 "owner".getBytes(java.nio.charset.StandardCharsets.UTF_8));
-        return state.insertWorkspaceSessionCommand(TENANT, "owner",
+        return state.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(TENANT, "owner",
                 UUID.randomUUID().toString(), "digest", "qwen-code", null,
                 null, List.of(), null,
-                new WorkspaceSelection("workspace", ".")).sessionId();
+                new WorkspaceSelection("workspace", "."))).sessionId();
     }
 
     @Test

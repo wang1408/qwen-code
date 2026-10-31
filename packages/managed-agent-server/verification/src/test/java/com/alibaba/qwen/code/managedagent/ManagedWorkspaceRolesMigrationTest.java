@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent;
 
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedSchemaJdbcTemplate;
@@ -88,9 +89,9 @@ class ManagedWorkspaceRolesMigrationTest {
         var transactions = new TransactionTemplate(
                 new DataSourceTransactionManager(source));
         String sessionId = transactions.execute(ignored -> store
-                .insertWorkspaceSessionCommand("tenant", "creator", "create",
+                .insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "creator", "create",
                         "digest", "qwen-code", null, null, List.of(), null,
-                        new WorkspaceSelection("workspace", "."))
+                        new WorkspaceSelection("workspace", ".")))
                 .sessionId());
         assertThat(jdbc.queryForObject("SELECT owner_actor_key FROM"
                 + " ma_session WHERE session_id = ?",

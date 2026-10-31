@@ -5,6 +5,7 @@ import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties.RuntimeB
 import com.alibaba.qwen.code.managedagent.contracts.event.CommittedEventPublisher;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.WorkspaceCsiRegistration;
 import com.alibaba.qwen.code.managedagent.contracts.runtime.ProtectionIdentity;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.model.StoreModels;
 import com.alibaba.qwen.code.runtimebroker.RuntimeAttestation;
@@ -164,9 +165,9 @@ class ResidentWorkspacesTest {
                 mock(CommittedEventPublisher.class), new ManagedWorkspaceRegistry(peerJdbc), properties, new com.alibaba.qwen.code.managedagent.harness.SdkHarnessRules()));
         var peerTransaction = new TransactionTemplate(new DataSourceTransactionManager(source));
         start.await(10, java.util.concurrent.TimeUnit.SECONDS);
-        return peerTransaction.execute(status -> peer.insertWorkspaceSessionCommand("tenant", "owner", key,
+        return peerTransaction.execute(status -> peer.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "owner", key,
                 "digest-" + key, "qwen-code", null, "Session", List.of(), null,
-                new WorkspaceSelection("workspace", ".")));
+                new WorkspaceSelection("workspace", "."))));
     }
 
     @Test
@@ -419,8 +420,8 @@ class ResidentWorkspacesTest {
     }
 
     private StoreModels.Admission create(String key) {
-        return transaction.execute(status -> store.insertWorkspaceSessionCommand("tenant", "owner", key,
-                "digest-" + key, "qwen-code", null, "Session", List.of(), null, new WorkspaceSelection("workspace", ".")));
+        return transaction.execute(status -> store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "owner", key,
+                "digest-" + key, "qwen-code", null, "Session", List.of(), null, new WorkspaceSelection("workspace", "."))));
     }
 
     private RuntimeBindingRecord ready(RuntimeProvisionRequest request) {

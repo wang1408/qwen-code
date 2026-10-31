@@ -2,6 +2,7 @@ package com.alibaba.qwen.code.managedagent.persistence;
 
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.WorkspaceCsiRegistration;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.StorageIdentityReader;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
@@ -186,9 +187,9 @@ class WorkspaceCreationStoreTest {
         var sessions = com.alibaba.qwen.code.managedagent.VerificationFixtures.configure(new ManagedAgentStore(jdbc, new ObjectMapper(), Clock.systemUTC(),
                 ignored -> {}, registry, properties, new com.alibaba.qwen.code.managedagent.harness.SdkHarnessRules()));
         var admitted = new TransactionTemplate(new DataSourceTransactionManager(source)).execute(status ->
-                sessions.insertWorkspaceSessionCommand("tenant", "actor", "session-key", "digest",
+                sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "session-key", "digest",
                         "qwen-code", null, null, List.of(java.util.Map.of("type", "input_text", "text", "Read a file")),
-                        "payload-digest", new WorkspaceSelection(created.workspaceId(), ".")));
+                        "payload-digest", new WorkspaceSelection(created.workspaceId(), "."))));
         assertThat(admitted.sessionId()).isNotBlank();
     }
 
@@ -406,9 +407,9 @@ class WorkspaceCreationStoreTest {
         properties.getHarness().setWorkspaceFilesEnabled(true);
         var sessions = com.alibaba.qwen.code.managedagent.VerificationFixtures.configure(new ManagedAgentStore(jdbc, new ObjectMapper(), Clock.systemUTC(), ignored -> {}, registry, properties, new com.alibaba.qwen.code.managedagent.harness.SdkHarnessRules()));
         var admitted = new TransactionTemplate(new DataSourceTransactionManager(source)).execute(status ->
-                sessions.insertWorkspaceSessionCommand("tenant", "actor", "local-session", "digest", "qwen-code", null, null,
+                sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", "local-session", "digest", "qwen-code", null, null,
                         List.of(java.util.Map.of("type", "input_text", "text", "Read README.md")), "payload-digest",
-                        new WorkspaceSelection(created.workspaceId(), created.defaultCwdRelative())));
+                        new WorkspaceSelection(created.workspaceId(), created.defaultCwdRelative()))));
         assertThat(admitted.sessionId()).isNotBlank();
     }
 

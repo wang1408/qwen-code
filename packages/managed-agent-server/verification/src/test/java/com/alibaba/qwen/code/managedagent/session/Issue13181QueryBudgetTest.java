@@ -5,6 +5,7 @@ import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
 import com.alibaba.qwen.code.managedagent.contracts.artifact.ToolPublicationObjectStore;
 import com.alibaba.qwen.code.managedagent.contracts.harness.HarnessConnector;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedSessionStoreModels;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.model.RequestDigests;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
@@ -229,10 +230,10 @@ class Issue13181QueryBudgetTest {
                 + " (?, 'workspace', ?, 'OPERATOR')", tenant,
                 "actor".getBytes(StandardCharsets.UTF_8));
         String sessionId = fixture.tx.execute(status -> fixture.store
-                .insertWorkspaceSessionCommand(tenant, "actor",
+                .insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor",
                         "sse-" + UUID.randomUUID(), "digest", "qwen-code",
                         null, null, List.of(), null,
-                        new WorkspaceSelection("workspace", "."))).sessionId();
+                        new WorkspaceSelection("workspace", ".")))).sessionId();
         long after = fixture.store.requireSession(tenant, sessionId)
                 .lastSequence();
         int events = 20;
@@ -441,10 +442,10 @@ class Issue13181QueryBudgetTest {
             String key = "ws-" + index + "-" + UUID.randomUUID();
             String title = "w-" + index;
             boundIds.add(fixture.tx.execute(status -> fixture.store
-                    .insertWorkspaceSessionCommand(bound, "actor", key,
+                    .insertWorkspaceSessionCommand(new WorkspaceSessionCommand(bound, "actor", key,
                             "digest", "qwen-code", null, title,
                             List.of(), null,
-                            new WorkspaceSelection("workspace", "."))).sessionId());
+                            new WorkspaceSelection("workspace", ".")))).sessionId());
         }
         // One workspace session opts out of yolo: its actions capability
         // must differ from the other rows'. Another holds a completed close:
@@ -553,10 +554,10 @@ class Issue13181QueryBudgetTest {
             String key = "ws-" + index + "-" + UUID.randomUUID();
             String title = "w-" + index;
             ids.add(fixture.tx.execute(status -> fixture.store
-                    .insertWorkspaceSessionCommand(tenant, creator, key,
+                    .insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, creator, key,
                             "digest", "qwen-code", null, title,
                             List.of(), null,
-                            new WorkspaceSelection(workspace, ".")))
+                            new WorkspaceSelection(workspace, "."))))
                     .sessionId());
         }
         // An eighth session whose creator has no access row at all — the
@@ -567,10 +568,10 @@ class Issue13181QueryBudgetTest {
                 + " 'workspace', ?, 'OPERATOR')", tenant,
                 "ghost".getBytes(StandardCharsets.UTF_8));
         ids.add(fixture.tx.execute(status -> fixture.store
-                .insertWorkspaceSessionCommand(tenant, "ghost",
+                .insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "ghost",
                         "ws-ghost-" + UUID.randomUUID(), "digest",
                         "qwen-code", null, "w-ghost", List.of(), null,
-                        new WorkspaceSelection("workspace", ".")))
+                        new WorkspaceSelection("workspace", "."))))
                 .sessionId());
         fixture.jdbc.update("DELETE FROM ma_workspace_access"
                 + " WHERE tenant_id = ? AND workspace_id = X'776f726b7370616365'"
@@ -740,7 +741,7 @@ class Issue13181QueryBudgetTest {
         String readRow = fixture.createCwdSessions(tenant, 1).getFirst();
         fixture.jdbc.update("INSERT INTO ma_workspace (tenant_id, workspace_id, workspace_generation, storage_id, display_name, config_ref, policy_ref, state) VALUES (?, 'workspace-2', 1, 'storage-2', 'Workspace 2', ?, ?, 'ACTIVE')", tenant, WorkspaceExecutionProfile.CONFIG_REF, WorkspaceExecutionProfile.POLICY_REF);
         fixture.jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role) VALUES (?, 'workspace-2', ?, 'OPERATOR')", tenant, "actor".getBytes(StandardCharsets.UTF_8));
-        String operateRow = fixture.tx.execute(status -> fixture.store.insertWorkspaceSessionCommand(tenant, "actor", UUID.randomUUID().toString(), "digest", "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace-2", "."))).sessionId();
+        String operateRow = fixture.tx.execute(status -> fixture.store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor", UUID.randomUUID().toString(), "digest", "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace-2", ".")))).sessionId();
         fixture.jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role) VALUES (?, 'workspace', ?, 'READER')", tenant, "other".getBytes(StandardCharsets.UTF_8));
         fixture.jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role) VALUES (?, 'workspace-2', ?, 'OPERATOR')", tenant, "other".getBytes(StandardCharsets.UTF_8));
         fixture.ledger.reset();
@@ -1548,7 +1549,7 @@ class Issue13181QueryBudgetTest {
             jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role) VALUES (?, 'workspace', ?, 'OPERATOR')", tenant, "actor".getBytes(StandardCharsets.UTF_8));
             List<String> ids = new ArrayList<>();
             for (int index = 0; index < count; index++) {
-                ids.add(tx.execute(status -> store.insertWorkspaceSessionCommand(tenant, "actor", UUID.randomUUID().toString(), "digest", "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace", "."))).sessionId());
+                ids.add(tx.execute(status -> store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor", UUID.randomUUID().toString(), "digest", "qwen-code", null, null, List.of(), null, new WorkspaceSelection("workspace", ".")))).sessionId());
             }
             return ids;
         }

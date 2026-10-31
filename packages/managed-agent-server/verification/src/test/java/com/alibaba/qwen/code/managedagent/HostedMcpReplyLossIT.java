@@ -1,5 +1,6 @@
 package com.alibaba.qwen.code.managedagent;
 
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
 import com.alibaba.qwen.code.managedagent.persistence.WorkspaceStorageGuard;
@@ -511,10 +512,10 @@ class HostedMcpReplyLossIT {
 
     private SessionRef createSession() throws Exception {
         String key = uuid();
-        String session = store.insertWorkspaceSessionCommand(tenant, "actor",
+        String session = store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor",
                 "create-" + key, "sha256:" + "a".repeat(64), "qwen-code",
                 null, null, List.of(), null,
-                new WorkspaceSelection("workspace", "child")).sessionId();
+                new WorkspaceSelection("workspace", "child"))).sessionId();
         Map<String, Object> store = new LinkedHashMap<>();
         store.put("baseUrl", "http://127.0.0.1:" + port);
         store.put("tenantId", tenant);

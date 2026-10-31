@@ -5,6 +5,7 @@ import com.alibaba.qwen.code.managedagent.contracts.harness.HarnessConnector;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedExtensionProjection;
 import com.alibaba.qwen.code.managedagent.contracts.session.AgentStateStore;
 import com.alibaba.qwen.code.managedagent.contracts.session.ReplayCursorExpired;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.RuntimeWarmer;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceToolProfiles;
@@ -468,17 +469,11 @@ public class ManagedAgentService implements com.alibaba.qwen.code.managedagent.c
         boolean approvalSelectionSupported = harness.supportsApprovalSelection()
                 && ("qwen-code".equals(agentId) || harness.supportsAgentDefinitionApprovalSelection());
         try {
-            admission = worktreePlan == null ? store.insertWorkspaceSessionCommand(tenantId,
+            admission = store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenantId,
                     actorId, idempotencyKey, requestDigest, agentId, agentRevision,
                     effectiveTitle, input, payloadDigest, selection, approvalMode,
-                    approvalSelectionSupported,
-                    planMode, harness.supportsPlanMode(), additions, harness.supportsPublicChildAgents(), modelId, extensionPins,
-                    extensionLifecycleProfiles)
-                    : store.insertWorkspaceSessionCommand(tenantId,
-                            actorId, idempotencyKey, requestDigest, agentId, agentRevision,
-                            effectiveTitle, input, payloadDigest, selection, approvalMode,
-                            approvalSelectionSupported, planMode, harness.supportsPlanMode(), additions,
-                            harness.supportsPublicChildAgents(), modelId, extensionPins, extensionLifecycleProfiles, worktreePlan);
+                    approvalSelectionSupported, planMode, harness.supportsPlanMode(), additions,
+                    harness.supportsPublicChildAgents(), modelId, extensionPins, extensionLifecycleProfiles, worktreePlan));
         } catch (DuplicateKeyException error) {
             admission = store.replayWorkspaceSessionCommand(tenantId,
                     actorId, idempotencyKey, requestDigest);

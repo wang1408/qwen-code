@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent.persistence;
 
 import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedSessionStoreModels;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.model.StoreModels;
 import com.alibaba.qwen.code.runtimebroker.managedschema.ManagedSchema;
 import com.alibaba.qwen.code.runtimebroker.persistence.JdbcRuntimeBindingRepository;
@@ -332,7 +333,7 @@ class ManagedSessionPhysicalFenceTest {
                 transactions
                         .execute(
                                 status ->
-                                        publicStore.insertWorkspaceSessionCommand(
+                                        publicStore.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                                                 TENANT,
                                                 "actor",
                                                 "parent",
@@ -342,7 +343,7 @@ class ManagedSessionPhysicalFenceTest {
                                                 "parent",
                                                 List.of(),
                                                 null,
-                                                selection))
+                                                selection)))
                         .sessionId();
         var lineage = new StoreModels.SessionLineage(parent, parent, "run", 1);
         var child =
@@ -383,7 +384,7 @@ class ManagedSessionPhysicalFenceTest {
                         () ->
                                 transactions.execute(
                                         status ->
-                                                publicStore.insertWorkspaceSessionCommand(
+                                                publicStore.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(
                                                         TENANT,
                                                         "actor",
                                                         "second-parent",
@@ -393,7 +394,7 @@ class ManagedSessionPhysicalFenceTest {
                                                         "parent",
                                                         List.of(),
                                                         null,
-                                                        selection)))
+                                                        selection))))
                 .hasMessageContaining("Workspace");
         assertThat(
                         jdbc.queryForObject(

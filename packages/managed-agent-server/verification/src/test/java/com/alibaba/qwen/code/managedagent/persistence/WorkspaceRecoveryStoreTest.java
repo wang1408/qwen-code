@@ -4,6 +4,7 @@ import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties.RuntimeBroker.WorkspaceMount;
 import com.alibaba.qwen.code.managedagent.contracts.catalog.AgentDefinitionExtensions;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedSessionStoreModels;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.StorageIdentityReader;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.model.RequestDigests;
@@ -411,18 +412,18 @@ class WorkspaceRecoveryStoreTest {
             new ManagedAgentDefinitionStore(jdbc, new RequestDigests()).create("tenant", "def",
                     "def-digest", agentId, definitionDigest, definitionJson,
                     1L);
-            return sessions.insertWorkspaceSessionCommand("tenant", "actor",
+            return sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor",
                     UUID.randomUUID().toString(),
                     "sha256:" + "a".repeat(64), agentId, null, null, List.of(),
-                    null, new WorkspaceSelection("workspace-b", "."))
+                    null, new WorkspaceSelection("workspace-b", ".")))
                     .sessionId();
         });
         String deleted = new TransactionTemplate(manager).execute(status ->
-                sessions.insertWorkspaceSessionCommand("tenant", "actor",
+                sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor",
                         UUID.randomUUID().toString(),
                         "sha256:" + "a".repeat(64), agentId, "1", null,
                         List.of(), null,
-                        new WorkspaceSelection("workspace-b", "."))
+                        new WorkspaceSelection("workspace-b", ".")))
                         .sessionId());
         head(deleted);
         retireSession(deleted);
@@ -839,9 +840,9 @@ class WorkspaceRecoveryStoreTest {
     }
 
     private String session(String workspace) {
-        return new TransactionTemplate(manager).execute(status -> sessions.insertWorkspaceSessionCommand("tenant", "actor", UUID.randomUUID().toString(),
+        return new TransactionTemplate(manager).execute(status -> sessions.insertWorkspaceSessionCommand(new WorkspaceSessionCommand("tenant", "actor", UUID.randomUUID().toString(),
                 "sha256:" + "a".repeat(64), "qwen-code", null, null, List.of(), null,
-                new WorkspaceSelection(workspace, ".")).sessionId());
+                new WorkspaceSelection(workspace, "."))).sessionId());
     }
 
     private void head(String session) {

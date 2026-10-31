@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent;
 
 import com.alibaba.qwen.code.managedagent.config.runtime.EmbeddedRuntimeBroker;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.RuntimeWarmer;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
@@ -153,9 +154,9 @@ public final class HostedProcessCrashFixtureMain {
                     WorkspaceExecutionProfile.CONFIG_REF, WorkspaceExecutionProfile.POLICY_REF);
             jdbc.update("INSERT INTO ma_workspace_access (tenant_id, workspace_id, actor_id, role)"
                     + " VALUES (?, 'workspace', ?, 'OPERATOR')", tenant, "actor".getBytes(StandardCharsets.UTF_8));
-            sessionId = spring.getBean(ManagedAgentStore.class).insertWorkspaceSessionCommand(tenant, "actor", "create",
+            sessionId = spring.getBean(ManagedAgentStore.class).insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor", "create",
                     "sha256:" + "a".repeat(64), "qwen-code", null, null, List.of(), null,
-                    new WorkspaceSelection("workspace", "child")).sessionId();
+                    new WorkspaceSelection("workspace", "child"))).sessionId();
             Files.writeString(saved, sessionId);
         }
         Path ready = root.resolve("ready.tmp");

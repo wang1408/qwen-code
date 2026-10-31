@@ -11,6 +11,7 @@ import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedExtension
 import com.alibaba.qwen.code.managedagent.contracts.persistence.ManagedExtensionRecords;
 import com.alibaba.qwen.code.managedagent.contracts.persistence.WorkspaceCsiRegistration;
 import com.alibaba.qwen.code.managedagent.contracts.session.AgentStateStore;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceToolProfiles;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
@@ -408,156 +409,50 @@ public class ManagedAgentStore implements AgentStateStore {
 
     @Override
     @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId,
-            String actorId, String idempotencyKey, String requestDigest,
-            String agentId, String requestedRevision, String title,
-            List<Map<String, Object>> input, String payloadDigest,
-            WorkspaceSelection selection) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey,
-                requestDigest, agentId, requestedRevision, title, input,
-                payloadDigest, selection, null);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId,
-            String actorId, String idempotencyKey, String requestDigest,
-            String agentId, String requestedRevision, String title,
-            List<Map<String, Object>> input, String payloadDigest,
-            WorkspaceSelection selection, String requestedApprovalMode) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey,
-                requestDigest, agentId, requestedRevision, title, input, payloadDigest,
-                selection, requestedApprovalMode, false);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId,
-            String requestedRevision, String title, List<Map<String, Object>> input,
-            String payloadDigest, WorkspaceSelection selection, String requestedApprovalMode,
-            boolean approvalSelectionSupported) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest,
-                agentId, requestedRevision, title, input, payloadDigest, selection,
-                requestedApprovalMode, approvalSelectionSupported, null, false);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId,
-            String requestedRevision, String title, List<Map<String, Object>> input,
-            String payloadDigest, WorkspaceSelection selection, String requestedApprovalMode,
-            boolean approvalSelectionSupported, Boolean requestedPlanMode, boolean planModeSupported) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest,
-                agentId, requestedRevision, title, input, payloadDigest, selection, requestedApprovalMode,
-                approvalSelectionSupported, requestedPlanMode, planModeSupported, List.of());
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId,
-            String requestedRevision, String title, List<Map<String, Object>> input,
-            String payloadDigest, WorkspaceSelection selection, String requestedApprovalMode,
-            boolean approvalSelectionSupported, Boolean requestedPlanMode, boolean planModeSupported,
-            List<Map<String, Object>> skills) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest,
-                agentId, requestedRevision, title, input, payloadDigest, selection, requestedApprovalMode,
-                approvalSelectionSupported, requestedPlanMode, planModeSupported, skills, false);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId, String requestedRevision,
-            String title, List<Map<String, Object>> input, String payloadDigest, WorkspaceSelection selection,
-            String requestedApprovalMode, boolean approvalSelectionSupported, Boolean requestedPlanMode,
-            boolean planModeSupported, List<Map<String, Object>> skills, boolean publicChildrenSupported) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest,
-                agentId, requestedRevision, title, input, payloadDigest, selection, requestedApprovalMode,
-                approvalSelectionSupported, requestedPlanMode, planModeSupported, skills, publicChildrenSupported, null);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId, String requestedRevision,
-            String title, List<Map<String, Object>> input, String payloadDigest, WorkspaceSelection selection,
-            String requestedApprovalMode, boolean approvalSelectionSupported, Boolean requestedPlanMode,
-            boolean planModeSupported, List<Map<String, Object>> skills, boolean publicChildrenSupported, String modelId) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest, agentId, requestedRevision,
-                title, input, payloadDigest, selection, requestedApprovalMode, approvalSelectionSupported,
-                requestedPlanMode, planModeSupported, skills, publicChildrenSupported, modelId, null, Set.of());
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId, String requestedRevision,
-            String title, List<Map<String, Object>> input, String payloadDigest, WorkspaceSelection selection,
-            String requestedApprovalMode, boolean approvalSelectionSupported, Boolean requestedPlanMode,
-            boolean planModeSupported, List<Map<String, Object>> skills, boolean publicChildrenSupported, String modelId,
-            List<com.alibaba.qwen.code.managedagent.contracts.extensions.ManagedExtensionPackages.Pin> extensionPins,
-            Set<String> extensionLifecycleProfiles) {
-        return insertWorkspaceSessionCommand(tenantId, actorId, idempotencyKey, requestDigest,
-                agentId, requestedRevision, title, input, payloadDigest, selection, requestedApprovalMode,
-                approvalSelectionSupported, requestedPlanMode, planModeSupported, skills, publicChildrenSupported,
-                modelId, extensionPins, extensionLifecycleProfiles, null);
-    }
-
-    @Override
-    @Transactional
-    public Admission insertWorkspaceSessionCommand(String tenantId, String actorId,
-            String idempotencyKey, String requestDigest, String agentId, String requestedRevision,
-            String title, List<Map<String, Object>> input, String payloadDigest, WorkspaceSelection selection,
-            String requestedApprovalMode, boolean approvalSelectionSupported, Boolean requestedPlanMode,
-            boolean planModeSupported, List<Map<String, Object>> skills, boolean publicChildrenSupported, String modelId,
-            List<com.alibaba.qwen.code.managedagent.contracts.extensions.ManagedExtensionPackages.Pin> extensionPins,
-            Set<String> extensionLifecycleProfiles, SessionWorktreeStore.Plan worktree) {
-        if (!input.isEmpty() && !workspaceFilesEnabled) {
+    public Admission insertWorkspaceSessionCommand(WorkspaceSessionCommand command) {
+        if (!command.input().isEmpty() && !workspaceFilesEnabled) {
             throw workspaceExecutionUnavailable();
         }
         // InnoDB's first consistent read must follow the migration admission lock.
-        WorkspaceMigrationAdmission.lockTenant(jdbc, tenantId);
-        List<WorkspaceCommand> existing = findWorkspaceCommand(tenantId,
-                actorId, idempotencyKey);
+        WorkspaceMigrationAdmission.lockTenant(jdbc, command.tenantId());
+        List<WorkspaceCommand> existing = findWorkspaceCommand(command.tenantId(),
+                command.actorId(), command.idempotencyKey());
         if (!existing.isEmpty()) {
-            return replayWorkspaceCommand(tenantId, actorId,
-                    requestDigest, existing.getFirst(), false);
+            return replayWorkspaceCommand(command.tenantId(), command.actorId(),
+                    command.requestDigest(), existing.getFirst(), false);
         }
-        if (modelId != null && (!"qwen-code".equals(agentId) || !workspaceFilesEnabled
-                || modelCatalog.stream().noneMatch(option -> option.modelId().equals(modelId)))) {
+        if (command.modelId() != null && (!"qwen-code".equals(command.agentId()) || !workspaceFilesEnabled
+                || modelCatalog.stream().noneMatch(option -> option.modelId().equals(command.modelId())))) {
             throw new ManagedAgentException(400, "unsupported_model",
                     "The model is not published for this Agent.");
         }
-        AgentPin pin = selectApprovalMode(resolveAgentPin(tenantId, agentId,
-                requestedRevision, true), requestedApprovalMode, approvalSelectionSupported);
-        boolean planMode = Boolean.TRUE.equals(requestedPlanMode);
-        if (planMode && (!planModeSupported || !approvalSelectionSupported
+        AgentPin pin = selectApprovalMode(resolveAgentPin(command.tenantId(), command.agentId(),
+                command.requestedRevision(), true), command.requestedApprovalMode(), command.approvalSelectionSupported());
+        boolean planMode = Boolean.TRUE.equals(command.requestedPlanMode());
+        if (planMode && (!command.planModeSupported() || !command.approvalSelectionSupported()
                 || pin.hooks() || pin.mcp() || !(WorkspaceToolProfiles.FILES.equals(pin.toolProfile())
                 || WorkspaceToolProfiles.isPublicShell(pin.toolProfile())))) {
             throw new ManagedAgentException(409, "unsupported_feature", "Plan mode is unavailable");
         }
-        if (!input.isEmpty() && WorkspaceToolProfiles.isPublicShell(pin.toolProfile())
+        if (!command.input().isEmpty() && WorkspaceToolProfiles.isPublicShell(pin.toolProfile())
                 && !workspaceShellEnabled) {
             throw workspaceExecutionUnavailable();
         }
-        requireCreationScope(tenantId, idempotencyKey, true);
+        requireCreationScope(command.tenantId(), command.idempotencyKey(), true);
         ResolvedBinding workspace = workspaces.resolveForCreation(
-                tenantId, actorId, selection);
-        if (extensionPins != null) {
+                command.tenantId(), command.actorId(), command.selection());
+        if (command.extensionPins() != null) {
             if (extensionPackages == null) {
                 throw workspaceExecutionUnavailable();
             }
             if ((!WorkspaceToolProfiles.SHELL.equals(pin.toolProfile()) && !WorkspaceToolProfiles.MCP.equals(pin.toolProfile()))
-                    || !extensionLifecycleProfiles.contains(pin.toolProfile())) {
+                    || !command.extensionLifecycleProfiles().contains(pin.toolProfile())) {
                 throw new ManagedAgentException(409, "unsupported_feature",
                         "Extension configuration requires a negotiated Shell or MCP Session lifecycle profile.");
             }
-            extensionPackages.requireSelection(tenantId, actorId, workspace.binding().getWorkspaceId(), extensionPins);
+            extensionPackages.requireSelection(command.tenantId(), command.actorId(), workspace.binding().getWorkspaceId(), command.extensionPins());
         }
-        WorkspaceMigrationAdmission.requireOpen(jdbc, tenantId, workspace.binding().getStorageId());
+        WorkspaceMigrationAdmission.requireOpen(jdbc, command.tenantId(), workspace.binding().getStorageId());
         boolean sshWorkspace = isSshWorkspace(workspace.binding());
         if (sshWorkspace) {
             requireSshToolProfile(pin.toolProfile());
@@ -572,42 +467,42 @@ public class ManagedAgentStore implements AgentStateStore {
             }
             residentWorkspaces.requireCreation(jdbc, workspace.binding(), pin.toolProfile());
         } else if (!sshWorkspace) {
-            WorkspaceStorageKindGuard.requireLocalAlias(jdbc, tenantId, workspace.binding().getStorageId());
+            WorkspaceStorageKindGuard.requireLocalAlias(jdbc, command.tenantId(), workspace.binding().getStorageId());
         }
-        if (!resident && !input.isEmpty()
+        if (!resident && !command.input().isEmpty()
                 && (!WorkspaceExecutionProfile.CONFIG_REF.equals(workspace.configRef())
                         || !WorkspaceExecutionProfile.POLICY_REF.equals(workspace.policyRef())
-                        || !sshWorkspace && !configuredStorage(tenantId, workspace.binding().getStorageId()))) {
+                        || !sshWorkspace && !configuredStorage(command.tenantId(), workspace.binding().getStorageId()))) {
             throw workspaceExecutionUnavailable();
         }
         List<Map<String, Object>> merged = new ArrayList<>();
-        if (!skills.isEmpty() && pin.digest() != null) {
-            merged.addAll(AgentDefinitionExtensions.skills(readMap(definitions.find(tenantId, agentId,
+        if (!command.skills().isEmpty() && pin.digest() != null) {
+            merged.addAll(AgentDefinitionExtensions.skills(readMap(definitions.find(command.tenantId(), command.agentId(),
                     Long.parseLong(pin.revision())).orElseThrow().definitionJson()).get("skills"), true));
         }
-        merged.addAll(skills);
+        merged.addAll(command.skills());
         var effectiveSkills = AgentDefinitionExtensions.sessionSkills(merged);
-        if (worktree != null && sessionWorktrees == null) {
+        if (command.worktree() != null && sessionWorktrees == null) {
             throw new ManagedAgentException(409, "worktree_unavailable", "Session worktrees are unavailable.");
         }
-        ResolvedBinding target = worktree == null ? workspace : worktree.target(workspace);
-        Admission admission = insertSession(tenantId, "CREATE_SESSION", idempotencyKey,
-                requestDigest, agentId, title, input, payloadDigest,
-                target, actorId, pin, null, planMode, modelId);
-        if (worktree != null) {
-            sessionWorktrees.admit(tenantId, actorId, admission.sessionId(), worktree, workspace);
+        ResolvedBinding target = command.worktree() == null ? workspace : command.worktree().target(workspace);
+        Admission admission = insertSession(command.tenantId(), "CREATE_SESSION", command.idempotencyKey(),
+                command.requestDigest(), command.agentId(), command.title(), command.input(), command.payloadDigest(),
+                target, command.actorId(), pin, null, planMode, command.modelId());
+        if (command.worktree() != null) {
+            sessionWorktrees.admit(command.tenantId(), command.actorId(), admission.sessionId(), command.worktree(), workspace);
         }
-        if (workspaceChildAgentsEnabled && publicChildrenSupported && !resident && (!sshWorkspace || managedExtensionExecutionEnabled)
-                && (managedExtensionExecutionEnabled || "qwen-code".equals(agentId) && pin.digest() == null)
+        if (workspaceChildAgentsEnabled && command.publicChildrenSupported() && !resident && (!sshWorkspace || managedExtensionExecutionEnabled)
+                && (managedExtensionExecutionEnabled || "qwen-code".equals(command.agentId()) && pin.digest() == null)
                 && WorkspaceToolProfiles.SHELL.equals(pin.toolProfile())) {
             jdbc.update("UPDATE ma_session SET public_child_agents_version=1 WHERE tenant_id=? AND session_id=?",
-                    tenantId, admission.sessionId());
+                    command.tenantId(), admission.sessionId());
         }
-        if (!skills.isEmpty()) {
-            creationSkills.save(tenantId, admission.sessionId(), effectiveSkills);
+        if (!command.skills().isEmpty()) {
+            creationSkills.save(command.tenantId(), admission.sessionId(), effectiveSkills);
         }
-        if (extensionPins != null) {
-            creationSkills.saveInitialSelection(tenantId, admission.sessionId(), extensionPins);
+        if (command.extensionPins() != null) {
+            creationSkills.saveInitialSelection(command.tenantId(), admission.sessionId(), command.extensionPins());
         }
         return admission;
     }

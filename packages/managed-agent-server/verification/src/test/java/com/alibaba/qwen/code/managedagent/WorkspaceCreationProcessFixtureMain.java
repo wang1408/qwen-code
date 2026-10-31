@@ -1,6 +1,7 @@
 package com.alibaba.qwen.code.managedagent;
 
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.model.StoreModels.Admission;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedAgentStore;
 import com.alibaba.qwen.code.managedagent.persistence.ManagedWorkspaceRegistry;
@@ -38,9 +39,9 @@ public final class WorkspaceCreationProcessFixtureMain {
         switch (required("W0_ACTION")) {
             case "create-and-exit" -> {
                 Admission first = transactions.execute(status ->
-                        store.insertWorkspaceSessionCommand(tenant, "actor-a",
+                        store.insertWorkspaceSessionCommand(new WorkspaceSessionCommand(tenant, "actor-a",
                                 "workspace-create", digest, "qwen-code", null,
-                                null, List.of(), null, null));
+                                null, List.of(), null, null)));
                 require(first != null && !first.replayed(),
                         "creation did not commit a new command");
                 System.exit(23);

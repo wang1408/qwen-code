@@ -4,7 +4,7 @@ import com.alibaba.qwen.code.managedagent.api.AuthenticatedTenantActor;
 import com.alibaba.qwen.code.managedagent.api.TenantContextFilter;
 import com.alibaba.qwen.code.managedagent.config.ManagedAgentProperties;
 import com.alibaba.qwen.code.managedagent.contracts.harness.HarnessConnector;
-import com.alibaba.qwen.code.managedagent.contracts.session.AgentStateStore;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.exception.ManagedAgentException;
 import com.alibaba.qwen.code.managedagent.model.ApiModels.CommandAdmission;
@@ -34,7 +34,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -262,24 +261,24 @@ class ManagedApprovalSelectionTest {
                 .andExpect(jsonPath("$.approvalMode").doesNotExist());
     }
 
-    @Test
-    void storeImplementationsWithoutSelectionFailClosed() {
-        AgentStateStore legacy = mock(AgentStateStore.class, CALLS_REAL_METHODS);
-        assertThatThrownBy(
-                        () ->
-                                legacy.insertWorkspaceSessionCommand(
-                                        "tenant",
-                                        "actor",
-                                        "key",
-                                        "digest",
-                                        "qwen-code",
-                                        null,
-                                        null,
-                                        List.of(),
-                                        null,
-                                        new WorkspaceSelection("ws", "."),
-                                        "default"))
-                .isInstanceOf(UnsupportedOperationException.class);
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void creationCommandRetainsApprovalNegotiation(boolean supported) {
+        String tenant = workspace();
+        var store = store(true, "default");
+        var command = new WorkspaceSessionCommand(tenant, "actor", "key", "digest", "qwen-code",
+                null, null, List.of(), null, new WorkspaceSelection("ws", "."),
+                "yolo", supported, null, false, List.of(), false, null, null, java.util.Set.of(), null);
+        if (supported) {
+            var admitted = transaction().execute(status -> store.insertWorkspaceSessionCommand(command));
+            assertThat(store.requireSession(tenant, admitted.sessionId()).approvalMode()).isEqualTo("yolo");
+        } else {
+            assertThatThrownBy(() -> transaction().execute(status -> store.insertWorkspaceSessionCommand(command)))
+                    .isInstanceOfSatisfying(ManagedAgentException.class,
+                            error -> assertThat(error.getCode()).isEqualTo("unsupported_approval_mode"));
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM ma_session WHERE tenant_id=?", Integer.class, tenant))
+                    .isZero();
+        }
     }
 
     private String workspace() {

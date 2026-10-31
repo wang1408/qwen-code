@@ -2,6 +2,7 @@ package com.alibaba.qwen.code.managedagent.session;
 
 import com.alibaba.qwen.code.managedagent.contracts.harness.HarnessConnector;
 import com.alibaba.qwen.code.managedagent.contracts.session.AgentStateStore;
+import com.alibaba.qwen.code.managedagent.contracts.session.WorkspaceSessionCommand;
 import com.alibaba.qwen.code.managedagent.contracts.workspace.WorkspaceSelection;
 import com.alibaba.qwen.code.managedagent.model.ApiModels.InputBlock;
 import com.alibaba.qwen.code.managedagent.model.RequestDigests;
@@ -12,18 +13,15 @@ import com.alibaba.qwen.code.managedagent.workspace.SessionWorktreeService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -48,9 +46,7 @@ class ManagedAgentServiceWorktreeTest {
         when(harness.isAvailable()).thenReturn(true);
         when(harness.isWorkspaceFilesAvailable()).thenReturn(true);
         when(store.findSessionWorktree("tenant", "session")).thenReturn(descriptor());
-        when(store.insertWorkspaceSessionCommand(eq("tenant"), eq("actor"), eq("key"), anyString(),
-                eq("qwen-code"), isNull(), eq("title"), anyList(), any(), eq(selection), isNull(), anyBoolean(),
-                isNull(), anyBoolean(), anyList(), anyBoolean(), isNull(), isNull(), anySet(), eq(plan)))
+        when(store.insertWorkspaceSessionCommand(any(WorkspaceSessionCommand.class)))
                 .thenReturn(new Admission("session", prompted ? "turn" : null, false, true));
 
         var result = service.createWorkspaceSession("tenant", "actor", "key", "qwen-code", null,
@@ -58,6 +54,17 @@ class ManagedAgentServiceWorktreeTest {
                 null, null, List.of(), null, null, request);
 
         assertThat(result.sessionId()).isEqualTo("session");
+        var command = ArgumentCaptor.forClass(WorkspaceSessionCommand.class);
+        verify(store).insertWorkspaceSessionCommand(command.capture());
+        assertThat(command.getValue()).extracting(WorkspaceSessionCommand::tenantId,
+                WorkspaceSessionCommand::actorId, WorkspaceSessionCommand::idempotencyKey,
+                WorkspaceSessionCommand::agentId, WorkspaceSessionCommand::title,
+                WorkspaceSessionCommand::selection, WorkspaceSessionCommand::worktree)
+                .containsExactly("tenant", "actor", "key", "qwen-code", "title", selection, plan);
+        assertThat(command.getValue()).extracting(WorkspaceSessionCommand::requestedRevision,
+                WorkspaceSessionCommand::requestedApprovalMode, WorkspaceSessionCommand::requestedPlanMode,
+                WorkspaceSessionCommand::modelId, WorkspaceSessionCommand::extensionPins).containsOnlyNulls();
+        assertThat(command.getValue().requestDigest()).isNotNull();
         verify(worktrees).preflight("tenant", "actor", selection, request);
         verifyNoInteractions(coordinator);
     }
